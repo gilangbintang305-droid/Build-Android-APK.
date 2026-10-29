@@ -1,3 +1,4 @@
+
 name: Build Android APK
 
 on:
@@ -26,17 +27,62 @@ jobs:
           distribution: temurin
           java-version: 17
 
+      - name: Siapkan file web
+        run: |
+          mkdir -p www
+          if [ ! -f www/index.html ]; then
+            if [ -f index.html ]; then
+              cp index.html www/index.html
+            else
+              echo "ERROR: index.html tidak ditemukan"
+              exit 1
+            fi
+          fi
+
+      - name: Buat konfigurasi npm
+        run: |
+          cat > package.json <<'EOF'
+          {
+            "name": "balap-jalanan",
+            "version": "1.0.0",
+            "private": true,
+            "description": "Game balap offline Android",
+            "scripts": {
+              "build": "echo Web assets siap"
+            },
+            "dependencies": {
+              "@capacitor/core": "^6.2.1",
+              "@capacitor/android": "^6.2.1"
+            },
+            "devDependencies": {
+              "@capacitor/cli": "^6.2.1"
+            }
+          }
+          EOF
+
+          cat > capacitor.config.json <<'EOF'
+          {
+            "appId": "com.balapjalananku.game",
+            "appName": "Balap Jalanan",
+            "webDir": "www"
+          }
+          EOF
+
       - name: Instal dependensi
         run: npm install
 
-      - name: Tambahkan platform Android
-        run: npx cap add android
-
-      - name: Sinkronkan proyek
-        run: npx cap sync android
+      - name: Siapkan Android
+        run: |
+          if [ ! -d android ]; then
+            npx cap add android
+          fi
+          npx cap sync android
 
       - name: Bangun APK
-        run: cd android && chmod +x gradlew && ./gradlew assembleDebug
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
 
       - name: Simpan hasil APK
         uses: actions/upload-artifact@v4
